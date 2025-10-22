@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct ContentView: View {
-    @State private var goHome = false
+    @State private var isShowingEmptyState = false
 
     var body: some View {
         NavigationStack {
@@ -33,24 +33,15 @@ struct ContentView: View {
                 }
                 .padding()
             }
-            .navigationDestination(isPresented: $goHome) {
-                HomeView()
+            .navigationDestination(isPresented: $isShowingEmptyState) {
+                EmptyState()
             }
             .onAppear {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
-                    goHome = true
+                    isShowingEmptyState = true
                 }
             }
-            .navigationBarTitle("")
         }
-    }
-}
-
-struct HomeView: View {
-    var body: some View {
-        Text("Home")
-            .font(.title)
-            .padding()
     }
 }
 
