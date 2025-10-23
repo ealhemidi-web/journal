@@ -35,6 +35,7 @@ struct ContentView: View {
             }
             .navigationDestination(isPresented: $isShowingEmptyState) {
                 EmptyState()
+                    .navigationBarBackButtonHidden(true)
             }
             .onAppear {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
