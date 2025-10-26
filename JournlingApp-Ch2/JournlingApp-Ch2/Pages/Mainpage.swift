@@ -26,7 +26,7 @@ struct JournalCardView: View {
             HStack {
                 Text(entry.title).font(.headline).foregroundColor(.white)
                 Spacer()
-                Image(systemName: entry.isBookmarked ? "bookmark.fill" : "bookmark")
+                Image(systemName: entry.isBookmarked ? "bookmark" : "bookmark")
                     .foregroundColor(entry.isBookmarked ? accentColor : .gray)
                     .font(.title2)
             }
@@ -46,7 +46,7 @@ struct JournalCardView: View {
 }
 
 // 4. العرض الرئيسي (mainpage)
-struct mainpage: View {
+struct Mainpage: View {
     
     @State private var journalEntries: [JournalEntry] = []
     @State private var currentSort: String = "Entry Date" // لتخزين خيار التصنيف الحالي
@@ -165,5 +165,5 @@ struct mainpage: View {
 }
 
 #Preview {
-    mainpage()
+    Mainpage()
 }
