@@ -220,9 +220,26 @@ struct Mainpage: View {
                         .glassEffect(cornerRadius: 0, isCapsule: true)
                     }
                     .padding(.horizontal).padding(.top, 10)
-                    .onChange(of: currentSort) { _, _ in
-                        withAnimation(.easeInOut) { sortEntries() }
-                    }
+                    // iOS 17+ uses two-parameter closure; older iOS uses single-parameter
+                    .modifier(
+                        Group {
+                            if #available(iOS 17.0, *) {
+                                AnyView(
+                                    EmptyView()
+                                        .onChange(of: currentSort) { _, _ in
+                                            withAnimation(.easeInOut) { sortEntries() }
+                                        }
+                                )
+                            } else {
+                                AnyView(
+                                    EmptyView()
+                                        .onChange(of: currentSort) { _ in
+                                            withAnimation(.easeInOut) { sortEntries() }
+                                        }
+                                )
+                            }
+                        }
+                    )
                     
                     // حالة لا توجد أي مدخلات إطلاقاً
                     if entries.isEmpty {
@@ -341,10 +358,26 @@ struct Mainpage: View {
             .onAppear {
                 sortEntries()
             }
-            .onChange(of: entries) { _, _ in
-                // حافظ على الترتيب بعد أي تعديل (مثل تغيير حالة البوك مارك)
-                withAnimation(.easeInOut) { sortEntries() }
-            }
+            // iOS 17+ uses two-parameter closure; older iOS uses single-parameter
+            .modifier(
+                Group {
+                    if #available(iOS 17.0, *) {
+                        AnyView(
+                            EmptyView()
+                                .onChange(of: entries) { _, _ in
+                                    withAnimation(.easeInOut) { sortEntries() }
+                                }
+                        )
+                    } else {
+                        AnyView(
+                            EmptyView()
+                                .onChange(of: entries) { _ in
+                                    withAnimation(.easeInOut) { sortEntries() }
+                                }
+                        )
+                    }
+                }
+            )
         }
     }
 }
