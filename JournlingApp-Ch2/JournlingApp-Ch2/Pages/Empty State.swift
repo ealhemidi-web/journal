@@ -90,8 +90,7 @@ struct EmptyState: View {
                         // **استخدام glassEffect مع تحديد شكل Capsule**
                         .glassEffect(cornerRadius: 0, isCapsule: true)
                     }
-                    .padding(.horizontal)
-                    .padding(.top, 10)
+                    .padding(.horizontal).padding(.top, 10)
                     
                     
                     
@@ -147,14 +146,12 @@ struct EmptyState: View {
                     .presentationBackground(.clear)
             }
             .navigationBarHidden(true)
-        }
-        .preferredColorScheme(.dark)
-        //هنا تعطي مظهر الدارك موود
+            .preferredColorScheme(.dark)
+            //هنا تعطي مظهر الدارك موود
+
     }
-}
-
-
-
+    }
+    }
 
 #Preview {
     EmptyState()

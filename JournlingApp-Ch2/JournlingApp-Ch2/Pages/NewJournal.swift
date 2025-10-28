@@ -16,7 +16,7 @@ struct NewJournal: View {
     // خصائص إدخال البيانات
     @State private var title: String = ""
     @State private var content: String = ""
-    @State private var showingAlert = false
+    @State private var showCustomAlert = false
     
     // الألوان المخصصة (نفس الألوان المستخدمة في الصفحة الرئيسية)
     let appBackgroundColor = Color(hex: "141420") ?? .black
@@ -36,10 +36,11 @@ struct NewJournal: View {
                 HStack {
                     // زر الإلغاء (X)
                     Button {
-                        showingAlert = true //  لحفظ الشاشة أو إغلاقها
+                        showCustomAlert = true //  لحفظ الشاشة أو إغلاقها
                     } label: {
                         Image(systemName: "xmark")
-                            .font(.title2) .foregroundColor(.white)
+                            .font(.title2) .foregroundColor(.gray)
+                        
                     }
                     
                     Spacer()
@@ -65,11 +66,15 @@ struct NewJournal: View {
                     .font(.largeTitle)
                     .fontWeight(.bold)
                     .foregroundColor(.white)
+                    .padding(.top, 10)
+                    .padding(.horizontal, 20)
                 
                 // 2. التاريخ
                 Text(currentDate)
                     .font(.subheadline)
                     .foregroundColor(.gray)
+                    .padding(.top, 10)
+                    .padding(.horizontal, 20)
                 
                 // 3. محرر اليومية (Text Editor) مع Placeholder
                 ZStack(alignment: .topLeading) {
@@ -89,28 +94,64 @@ struct NewJournal: View {
                             .allowsHitTesting(false) // حتى لا يمنع الكتابة في TextEditor
                     }
                 }
+                .padding(.top, 10)
+                .padding(.horizontal, 20)
             }
-            .padding(.top, 10)
-            .padding(.horizontal, 20)
-        }
-        .alert("Discard Changes?", isPresented: $showingAlert) {
-                    // زر "Discard" (يهمل التغييرات ويغلق الشاشة)
-                    Button("Discard", role: .destructive) {
-                        dismiss() // يقوم بإغلاق الـ Sheet
+            
+            if showCustomAlert {
+                // خلفية تغميق الشاشة
+                Color.black.opacity(0.4)
+                    .ignoresSafeArea()
+                    .onTapGesture { showCustomAlert = false } // لو ضغطت بالخلفية، يقفل التنبيه
+                VStack {
+                    Spacer()
+                    // الكرت (التنبيه) نفسه
+                    VStack(spacing: 16) {
+                        Text("Are you sure you want to discard changes on this journal?")
+                            .multilineTextAlignment(.center)
+                            .font(.headline)
+                            .foregroundColor(.gray)
+                            .padding(.top, 10)
+                        
+                        Button(role: .destructive) {
+                            // الإجراء لما تضغط Discard
+                            showCustomAlert = false
+                            dismiss() // يغلق الصفحة
+                        } label: {
+                            Text("Discard Changes")
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color.gray.opacity(0.15))
+                                .cornerRadius(35)
+                        }
+                        
+                        Button {
+                            // Keep Editing (يلغي التنبيه فقط)
+                            showCustomAlert = false
+                        } label: {
+                            Text("Keep Editing")
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .foregroundColor(.white)
+                                .background(Color.gray.opacity(0.15))
+                                .cornerRadius(35)
+                        }
                     }
-                    // زر "Cancel" (يلغي الإغلاق ويعود للشاشة)
-                    Button("Cancel", role: .cancel) {
-                        // لا يقوم بأي شيء، فقط يغلق التنبيه
-                    }
-                } message: {
-                    Text("Are you sure you want to discard your unsaved changes?")
+                    .padding(24)
+                    .background(.ultraThinMaterial)
+                    .cornerRadius(30)
+                    .padding(.horizontal, 40)
+                    .shadow(radius: 10)
+                    
+                    Spacer()
                 }
+                .transition(.scale)
+                .background(appBackgroundColor)
+            }
+            }
                 
-        
-        .background(appBackgroundColor)
+        }
     }
-}
-
 #Preview {
     NewJournal()
         .preferredColorScheme(.dark)
