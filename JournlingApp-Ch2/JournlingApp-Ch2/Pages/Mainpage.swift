@@ -19,7 +19,7 @@ struct JournalEntry: Identifiable {
 struct JournalCardView: View {
     let entry: JournalEntry
     // لون التظليل (7F81FF) بدون hex
-    let accentColor = Color(red: 127 / 255, green: 129 / 255, blue: 255 / 255)
+    let accentColor = Color(red: 160 / 255, green: 129 / 255, blue: 255 / 255)
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -37,7 +37,7 @@ struct JournalCardView: View {
         .padding(18)
         .background(
             // **تطبيق تأثير الـ Glassmorphism على البطاقة**
-            RoundedRectangle(cornerRadius: 20)
+            RoundedRectangle(cornerRadius: 30)
                 .fill(.ultraThinMaterial) // خلفية شفافة
                 .shadow(color: .black.opacity(0.2), radius: 5, x: 0, y: 5) // ظل خفيف
         )
@@ -47,7 +47,7 @@ struct JournalCardView: View {
 
 // 4. العرض الرئيسي (mainpage)
 struct Mainpage: View {
-    
+    @State private var showCreationSheet: Bool = false
     @State private var journalEntries: [JournalEntry] = []
     @State private var currentSort: String = "Entry Date" // لتخزين خيار التصنيف الحالي
     
@@ -87,7 +87,7 @@ struct Mainpage: View {
                                 }
                             } label: {
                                 // أيقونة التصنيف الحديثة (هرمية بثلاث خطوط)
-                                Image(systemName: "line.3.horizontal.decrease.circle.fill")
+                                Image(systemName: "line.3.horizontal.decrease")
                             }
                             
                             // 2. زر الإضافة
@@ -100,6 +100,7 @@ struct Mainpage: View {
                                         isBookmarked: Bool.random() // تجربة الإشارة المرجعية
                                     )
                                 )
+                                showCreationSheet = true // <--- فتح النافذة بعد الإضافة
                             } label: {
                                 Image(systemName: "plus")
                             }
@@ -157,10 +158,15 @@ struct Mainpage: View {
                     )
                     .foregroundColor(.gray)
                     .padding(.horizontal).padding(.bottom, 20)
+                    
                 }
             }
             .navigationBarHidden(true)
         }
+        .sheet(isPresented: $showCreationSheet) {
+            NewJournal()
+        }
+        .preferredColorScheme(.dark)
     }
 }
 

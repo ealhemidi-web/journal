@@ -8,7 +8,7 @@
 import SwiftUI
 
 // 2. Create Journal View
-struct CreateJournalView: View {
+struct NewJournal: View {
     
     // لإغلاق الشاشة عند الضغط على زر X أو Done
     @Environment(\.dismiss) var dismiss
@@ -16,6 +16,7 @@ struct CreateJournalView: View {
     // خصائص إدخال البيانات
     @State private var title: String = ""
     @State private var content: String = ""
+    @State private var showingAlert = false
     
     // الألوان المخصصة (نفس الألوان المستخدمة في الصفحة الرئيسية)
     let appBackgroundColor = Color(hex: "141420") ?? .black
@@ -35,19 +36,16 @@ struct CreateJournalView: View {
                 HStack {
                     // زر الإلغاء (X)
                     Button {
-                        dismiss() // لإغلاق الشاشة
+                        showingAlert = true //  لحفظ الشاشة أو إغلاقها
                     } label: {
                         Image(systemName: "xmark")
-                            .font(.title2)
-                            .foregroundColor(.white)
+                            .font(.title2) .foregroundColor(.white)
                     }
                     
                     Spacer()
                     
                     // زر الحفظ (Done)
                     Button {
-                        // هنا يتم حفظ البيانات وإغلاق الشاشة
-                        dismiss()
                     } label: {
                         Image(systemName: "checkmark")
                             .font(.title2)
@@ -60,6 +58,7 @@ struct CreateJournalView: View {
                     }
                 }
                 .padding(.horizontal)
+                .padding(.top,5)
                 
                 // 1. حقل العنوان
                 TextField("Title", text: $title)
@@ -85,8 +84,8 @@ struct CreateJournalView: View {
                         Text("Type your Journal...")
                             .font(.body)
                             .foregroundColor(.gray)
-                            .padding(.top, 8)      // لضبط مكان النص داخل TextEditor
-                            .padding(.leading, 5)  // مسافة بسيطة من الحافة اليسرى
+                            .padding(.top, 6)      // لضبط مكان النص داخل TextEditor
+                            .padding(.leading,2)  // مسافة بسيطة من الحافة اليسرى
                             .allowsHitTesting(false) // حتى لا يمنع الكتابة في TextEditor
                     }
                 }
@@ -94,9 +93,25 @@ struct CreateJournalView: View {
             .padding(.top, 10)
             .padding(.horizontal, 20)
         }
+        .alert("Discard Changes?", isPresented: $showingAlert) {
+                    // زر "Discard" (يهمل التغييرات ويغلق الشاشة)
+                    Button("Discard", role: .destructive) {
+                        dismiss() // يقوم بإغلاق الـ Sheet
+                    }
+                    // زر "Cancel" (يلغي الإغلاق ويعود للشاشة)
+                    Button("Cancel", role: .cancel) {
+                        // لا يقوم بأي شيء، فقط يغلق التنبيه
+                    }
+                } message: {
+                    Text("Are you sure you want to discard your unsaved changes?")
+                }
+                
+        
+        .background(appBackgroundColor)
     }
 }
 
 #Preview {
-    CreateJournalView()
+    NewJournal()
+        .preferredColorScheme(.dark)
 }
