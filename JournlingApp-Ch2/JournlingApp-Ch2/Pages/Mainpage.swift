@@ -8,12 +8,14 @@
 import SwiftUI
 
 // نموذج بيانات المدخل (Journal Entry Model)
-struct JournalEntry: Identifiable {
+struct JournalEntry: Identifiable, Equatable {
     let id = UUID()
     var title: String
-    var date: String
+    var date: String          // نص لعرض التاريخ
     var content: String
     var isBookmarked: Bool
+    var createdAt: Date       // تاريخ فعلي للفرز
+    // ملاحظة: نترك Equatable مُولّد تلقائياً ليأخذ جميع الحقول بعين الاعتبار.
 }
 
 // ==========================================================
@@ -87,7 +89,7 @@ private struct BottomSearchBar: View {
 // ==========================================================
 
 struct Mainpage: View {
-    @State private var currentSort: String = "Entry Date"
+    @State private var currentSort: String = "Entry Date" // "Entry Date" أو "Bookmark"
     @State private var showCreationSheet: Bool = false
     
     // حالة تأكيد الحذف
@@ -98,14 +100,48 @@ struct Mainpage: View {
     // قائمة المدخلات الافتراضية - فارغة حتى يضيف المستخدم أول بطاقة
     @State private var entries: [JournalEntry] = []
     
+    // فهرس العناصر المعروضة حالياً (للدعم الصحيح للـ binding مع التصفية)
+    private var indicesToShow: [Int] {
+        // اختر الفهارس حسب التصفية، ثم رتّبها بالأحدث أولاً
+        let filteredIndices: [Int]
+        if currentSort == "Bookmark" {
+            filteredIndices = entries.indices.filter { entries[$0].isBookmarked }
+        } else {
+            filteredIndices = Array(entries.indices)
+        }
+        // الترتيب: الأحدث أولاً دائماً لعرض جميل
+        return filteredIndices.sorted { entries[$0].createdAt > entries[$1].createdAt }
+    }
+    
+    // دالة ترتيب العناصر بحسب الاختيار الحالي (تستخدم عند الإضافة/الحذف لثبات الترتيب العام)
+    private func sortEntries() {
+        switch currentSort {
+        case "Bookmark":
+            // لا نغير entries نفسها بالتصفية، فقط نحافظ على ترتيب منطقي داخلياً إن رغبت
+            entries.sort { lhs, rhs in
+                if lhs.createdAt != rhs.createdAt {
+                    return lhs.createdAt > rhs.createdAt
+                } else {
+                    // إن تساوى التاريخ، ضع المفضلة قبل غيرها
+                    return lhs.isBookmarked && !rhs.isBookmarked
+                }
+            }
+        default:
+            // الأحدث أولاً
+            entries.sort { $0.createdAt > $1.createdAt }
+        }
+    }
+    
     // دالة الحذف بالتمرير (Swipe-to-Delete) بعد التأكيد
     func deleteItems(at offsets: IndexSet) {
         entries.remove(atOffsets: offsets)
     }
     
-    // طلب الحذف عبر onDelete (من التحرير/السحب الافتراضي)
-    private func requestDelete(offsets: IndexSet) {
-        pendingOffsets = offsets
+    // طلب الحذف عبر onDelete (من التحرير/السحب الافتراضي) مع تحويل الفهارس من المعروض إلى الأصل
+    private func requestDelete(offsets displayedOffsets: IndexSet) {
+        // حوّل الفهارس الظاهرة إلى فهارس حقيقية في entries
+        let mapped = IndexSet(displayedOffsets.map { indicesToShow[$0] })
+        pendingOffsets = mapped
         pendingId = nil
         showDeleteAlert = true
     }
@@ -125,6 +161,9 @@ struct Mainpage: View {
         } else if let id = pendingId, let idx = entries.firstIndex(where: { $0.id == id }) {
             entries.remove(at: idx)
             pendingId = nil
+        }
+        withAnimation(.easeInOut) {
+            sortEntries()
         }
     }
    
@@ -148,33 +187,44 @@ struct Mainpage: View {
                         // الأزرار العلوية (الفرز والإضافة)
                         HStack(spacing: 30) {
                             
-                            //هنا زر الفرز
+                            // زر الفرز/التصفية
                             Menu {
-                                Button("Sort by Bookmark") { currentSort = "Bookmark" }
-                                Button("Sort by Entry Date") { currentSort = "Entry Date" }
+                                Button {
+                                    withAnimation(.easeInOut) { currentSort = "Bookmark" }
+                                } label: {
+                                    Label("Sort by Bookmark", systemImage: currentSort == "Bookmark" ? "checkmark" : "")
+                                }
+                                Button {
+                                    withAnimation(.easeInOut) { currentSort = "Entry Date" }
+                                } label: {
+                                    Label("Sort by Entry Date", systemImage: currentSort == "Entry Date" ? "checkmark" : "")
+                                }
                             }
                             label: {
                                 Image(systemName: "line.3.horizontal.decrease")
                             }
                             
-                            //هنا زر الاضافه
+                            // زر الإضافة
                             Button {
                                 showCreationSheet = true
                             }
                             label: {
                                 Image(systemName: "plus")
                             }
-                        } //نهايه ال HStack
+                        } // نهاية HStack
                         
-                        //هنا حجم وشكل ولون المربع الي فيه الايقونات
+                        // مظهر أيقونات الهيدر
                         .font(.title2)
                         .foregroundColor(.white)
                         .padding(15)
-                        // **استخدام glassEffect مع تحديد شكل Capsule**
                         .glassEffect(cornerRadius: 0, isCapsule: true)
                     }
                     .padding(.horizontal).padding(.top, 10)
+                    .onChange(of: currentSort) { _, _ in
+                        withAnimation(.easeInOut) { sortEntries() }
+                    }
                     
+                    // حالة لا توجد أي مدخلات إطلاقاً
                     if entries.isEmpty {
                         // شاشة فارغة مطابقة لواجهة EmptyState (المحتوى في المنتصف والبحث في الأسفل)
                         let accentTextColor = Color(red: 127 / 255, green: 129 / 255, blue: 255 / 255)
@@ -207,32 +257,49 @@ struct Mainpage: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         
                     } else {
-                        // قائمة المدخلات القابلة للتمرير مع الحذف بالسحب
+                        // حساب إن كانت التصفية (Bookmark) أدت لعدم وجود نتائج
+                        let noResultsWithFilter = indicesToShow.isEmpty && currentSort == "Bookmark"
+                        
                         VStack(spacing: 0) {
-                            List {
-                                ForEach($entries) { $entry in
-                                    // نحتاج الـ id هنا لإيجاد الفهرس عند الحذف من swipeActions
-                                    let id = entry.id
-                                    
-                                    JournalCard(entry: $entry)
-                                        .listRowSeparator(.hidden)
-                                        .listRowBackground(Color.clear)
-                                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                                            Button(role: .destructive) {
-                                                requestDelete(id: id)
-                                            } label: {
-                                                Label("Delete", systemImage: "trash")
-                                            }
-                                        }
+                            if noResultsWithFilter {
+                                // لا توجد مذكرات مفضلة
+                                VStack(spacing: 12) {
+                                    Image(systemName: "bookmark.slash")
+                                        .font(.system(size: 44))
+                                        .foregroundColor(.gray)
+                                    Text("No bookmarked journals")
+                                        .foregroundColor(.white)
+                                        .font(.headline)
+                                    Text("Mark some journals as bookmarked to see them here.")
+                                        .foregroundColor(.gray)
+                                        .font(.subheadline)
                                 }
-                                // بدلاً من الحذف الفوري، نعرض تأكيد
-                                .onDelete(perform: requestDelete)
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            } else {
+                                // قائمة المدخلات القابلة للتمرير مع الحذف بالسحب
+                                List {
+                                    ForEach(indicesToShow, id: \.self) { index in
+                                        let id = entries[index].id
+                                        JournalCard(entry: $entries[index])
+                                            .listRowSeparator(.hidden)
+                                            .listRowBackground(Color.clear)
+                                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                                Button(role: .destructive) {
+                                                    requestDelete(id: id)
+                                                } label: {
+                                                    Label("Delete", systemImage: "trash")
+                                                }
+                                            }
+                                    }
+                                    // بدلاً من الحذف الفوري، نعرض تأكيد
+                                    .onDelete(perform: requestDelete)
+                                }
+                                .listStyle(.plain)
+                                .scrollContentBackground(.hidden)
+                                .background(Color.clear)
                             }
-                            .listStyle(.plain)
-                            .scrollContentBackground(.hidden)
-                            .background(Color.clear)
                             
-                            // شريط البحث أسفل القائمة أيضاً
+                            // شريط البحث أسفل القائمة أو أسفل حالة عدم وجود نتائج
                             BottomSearchBar()
                                 .padding(.vertical, 20)
                         }
@@ -241,7 +308,7 @@ struct Mainpage: View {
                 
             }
             
-            // تنبيه التأكيد (يشبه التصميم: عنوان + رسالة + زر إلغاء + زر حذف أحمر)
+            // تنبيه التأكيد
             .alert("Delete Journal?", isPresented: $showDeleteAlert) {
                 Button("Cancel", role: .cancel) {
                     pendingOffsets = nil
@@ -257,16 +324,26 @@ struct Mainpage: View {
             // ربط صفحة الإضافة بالبيانات الديناميكية عبر onSave
             .sheet(isPresented: $showCreationSheet) {
                 NewJournal { title, content in
+                    let now = Date()
                     let newEntry = JournalEntry(
                         title: title,
-                        date: Date().formatted(date: .numeric, time: .omitted),
+                        date: now.formatted(date: .numeric, time: .omitted),
                         content: content,
-                        isBookmarked: false
+                        isBookmarked: false,
+                        createdAt: now
                     )
                     entries.insert(newEntry, at: 0)
+                    withAnimation(.easeInOut) { sortEntries() }
                 }
                 .presentationDetents([.fraction(1)]) // ملء الشاشة
                 .presentationBackground(.clear)
+            }
+            .onAppear {
+                sortEntries()
+            }
+            .onChange(of: entries) { _, _ in
+                // حافظ على الترتيب بعد أي تعديل (مثل تغيير حالة البوك مارك)
+                withAnimation(.easeInOut) { sortEntries() }
             }
         }
     }
