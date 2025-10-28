@@ -18,6 +18,9 @@ struct NewJournal: View {
     @State private var content: String = ""
     @State private var showCustomAlert = false
     
+    // تمرير نتيجة الحفظ إلى المستدعي (اختياري ليدعم شاشتين مختلفتين)
+    var onSave: ((String, String) -> Void)?
+    
     // الألوان المخصصة (نفس الألوان المستخدمة في الصفحة الرئيسية)
     let appBackgroundColor = Color(hex: "141420") ?? .black
     let journalAccentColor = Color(red: 127 / 255, green: 129 / 255, blue: 255 / 255)
@@ -47,6 +50,7 @@ struct NewJournal: View {
                     
                     // زر الحفظ (Done)
                     Button {
+                        handleSave()
                     } label: {
                         Image(systemName: "checkmark")
                             .font(.title2)
@@ -57,6 +61,7 @@ struct NewJournal: View {
                                     .fill(journalAccentColor) // لون التظليل على زر Done
                             )
                     }
+                    .disabled(title.isEmpty || content.isEmpty)
                 }
                 .padding(.horizontal)
                 .padding(.top,5)
@@ -148,10 +153,15 @@ struct NewJournal: View {
                 .transition(.scale)
                 .background(appBackgroundColor)
             }
-            }
-                
         }
     }
+    
+    private func handleSave() {
+        onSave?(title, content)
+        dismiss()
+    }
+}
+
 #Preview {
     NewJournal()
         .preferredColorScheme(.dark)
